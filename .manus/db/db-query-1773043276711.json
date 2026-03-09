@@ -1,0 +1,16 @@
+{
+  "query": "UPDATE users SET role = 'admin' WHERE 1=1;\nSELECT id, name, email, role FROM users LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3eaixnMivZqMP8u.13435d193949 --database j6GvqM4GnYvaV2PxN3zPT8 --execute UPDATE users SET role = 'admin' WHERE 1=1;\nSELECT id, name, email, role FROM users LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "e0701459",
+      "email": "e0701459@u.nus.edu",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n1\te0701459\te0701459@u.nus.edu\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 1773
+}

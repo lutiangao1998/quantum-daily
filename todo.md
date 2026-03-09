@@ -48,3 +48,12 @@
 - [x] Admin panel page: pipeline status, manual trigger, report history
 - [x] Rewrite OpenClaw SKILL.md: pure API query, zero extra token cost
 - [x] OpenClaw setup guide embedded in admin panel
+
+## Pipeline Bug Fixes (v1.2) ✅
+- [x] Debug crawler: verify real HTTP fetches from arXiv/Google News RSS
+- [x] Fix broken RSS URLs (Reuters, IEEE, PhysOrg)
+- [x] Fix CSS @import order issue
+- [x] Promote user to admin role in database
+- [x] Fix analyzer: real LLM calls confirmed working
+- [x] Fix PDF generator: Puppeteer + system Chromium confirmed working
+- [x] End-to-end test: 55 articles collected, PDF at CDN ✅

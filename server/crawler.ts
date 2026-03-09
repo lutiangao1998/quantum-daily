@@ -134,7 +134,7 @@ async function crawlNature(): Promise<RawArticle[]> {
 async function crawlReuters(): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(
-      "https://feeds.reuters.com/reuters/technologyNews"
+      "https://feeds.reuters.com/reuters/technology"
     );
     const articles: RawArticle[] = [];
     for (const item of (feed.items || []).slice(0, 30)) {
@@ -160,7 +160,7 @@ async function crawlReuters(): Promise<RawArticle[]> {
 async function crawlIEEE(): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(
-      "https://spectrum.ieee.org/feeds/topic/quantum-computing.rss"
+      "https://spectrum.ieee.org/rss/fulltext"
     );
     const articles: RawArticle[] = [];
     for (const item of (feed.items || []).slice(0, 10)) {
@@ -184,7 +184,7 @@ async function crawlIEEE(): Promise<RawArticle[]> {
 async function crawlPhysOrg(): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(
-      "https://phys.org/rss-feed/technology-news/quantum-physics/"
+      "https://phys.org/rss-feed/physics-news/quantum-physics/"
     );
     const articles: RawArticle[] = [];
     for (const item of (feed.items || []).slice(0, 10)) {
