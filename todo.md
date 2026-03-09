@@ -34,3 +34,17 @@
 ## Delivery
 - [x] Checkpoint saved
 - [x] OpenClaw SKILL.md delivered to user
+
+## OpenClaw Deep Integration (v1.1)
+- [ ] Webhook endpoint: POST /api/webhook/trigger (with secret token auth)
+- [ ] External LLM support: configure own OpenAI/Claude/Gemini API key via env
+- [ ] Admin panel page with pipeline status, manual trigger, source config
+- [ ] Rewrite OpenClaw SKILL.md: direct API query (no Manus LLM needed)
+- [ ] OpenClaw setup guide: step-by-step install + config instructions
+- [ ] LLM provider selector in analyzer (Manus built-in vs external key)
+
+## OpenClaw Integration v1.1 (Manus-only)
+- [x] Webhook endpoint POST /api/webhook/trigger with WEBHOOK_SECRET auth
+- [x] Admin panel page: pipeline status, manual trigger, report history
+- [x] Rewrite OpenClaw SKILL.md: pure API query, zero extra token cost
+- [x] OpenClaw setup guide embedded in admin panel

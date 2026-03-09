@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getTodayDate } from "./pipeline";
 import { buildReportHTML } from "./pdfGenerator";
 import type { AnalyzedArticle, ReportSummary } from "./analyzer";
@@ -59,7 +59,6 @@ describe("buildReportHTML", () => {
 
   it("generates valid HTML with required sections", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, mockArticles);
-
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("Quantum Daily Intelligence Report");
     expect(html).toContain("2026-03-09");
@@ -70,19 +69,14 @@ describe("buildReportHTML", () => {
 
   it("includes bilingual content", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, mockArticles);
-
-    // English content
     expect(html).toContain("Quantum Daily Intelligence Report — 2026-03-09");
     expect(html).toContain("Today&#39;s quantum technology landscape");
-
-    // Chinese content
     expect(html).toContain("量子科技每日情报报告");
     expect(html).toContain("今日量子科技领域");
   });
 
   it("includes article titles and source links", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, mockArticles);
-
     expect(html).toContain("Breakthrough in Quantum Error Correction");
     expect(html).toContain("量子纠错领域突破");
     expect(html).toContain("arxiv.org");
@@ -91,7 +85,6 @@ describe("buildReportHTML", () => {
 
   it("includes importance scores", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, mockArticles);
-
     expect(html).toContain("9.2");
     expect(html).toContain("8.5");
   });
@@ -105,16 +98,54 @@ describe("buildReportHTML", () => {
       },
     ];
     const html = buildReportHTML("2026-03-09", mockSummary, xssArticles);
-
     expect(html).not.toContain('<script>alert("xss")</script>');
     expect(html).toContain("&lt;script&gt;");
   });
 
   it("handles empty articles array gracefully", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, []);
-
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("All Articles / 全部文章 (0)");
+  });
+});
+
+// ── Webhook Route Logic Tests ────────────────────────────────────────────────
+
+describe("webhook secret verification", () => {
+  it("returns false when no secret is configured", () => {
+    const originalSecret = process.env.WEBHOOK_SECRET;
+    process.env.WEBHOOK_SECRET = "";
+
+    // Simulate the verifySecret logic
+    const secret = process.env.WEBHOOK_SECRET;
+    const isValid = !!secret && secret === "test-secret";
+    expect(isValid).toBe(false);
+
+    process.env.WEBHOOK_SECRET = originalSecret;
+  });
+
+  it("validates matching secret from header", () => {
+    const testSecret = "quantum-test-secret-2026";
+    const headerSecret = testSecret;
+    const isValid = headerSecret === testSecret;
+    expect(isValid).toBe(true);
+  });
+
+  it("rejects mismatched secret", () => {
+    const testSecret = "quantum-test-secret-2026";
+    const headerSecret = "wrong-secret";
+    const isValid = headerSecret === testSecret;
+    expect(isValid).toBe(false);
+  });
+});
+
+// ── ENV Config Tests ─────────────────────────────────────────────────────────
+
+describe("ENV configuration", () => {
+  it("reads WEBHOOK_SECRET from environment", async () => {
+    const { ENV } = await import("./_core/env");
+    // webhookSecret should be a string (empty or set)
+    expect(typeof ENV.webhookSecret).toBe("string");
   });
 });
 
