@@ -1,0 +1,26 @@
+name: Daily Quantum Report
+
+on:
+  schedule:
+    - cron: '5 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Quantum Daily Pipeline
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            https://quantumnews-j6gvqm4g.manus.space/api/webhook/trigger \
+            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" )
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Trigger failed"
+            exit 1
+          fi
+          echo "✅ Pipeline triggered successfully"
