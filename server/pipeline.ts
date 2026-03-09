@@ -5,6 +5,7 @@ import { crawlAllSources } from "./crawler";
 import { analyzeArticles, generateReportSummary } from "./analyzer";
 import { buildReportHTML, generateAndUploadPDF } from "./pdfGenerator";
 import { notifyOwner } from "./_core/notification";
+import { sendDailyReportToSubscribers } from "./emailService";
 
 /** Get today's date in YYYY-MM-DD format (UTC) */
 export function getTodayDate(): string {
@@ -140,6 +141,45 @@ export async function runDailyPipeline(reportDate?: string): Promise<{
       .where(eq(reports.id, reportId));
 
     console.log(`[Pipeline] ✅ Pipeline completed for ${date}. PDF: ${pdfUrl}`);
+
+    // ── Step 6: Send email to subscribers ─────────────────────────
+    console.log(`[Pipeline] Step 6: Sending email to subscribers...`);
+    const finalReport = await db
+      .select()
+      .from(reports)
+      .where(eq(reports.id, reportId))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (finalReport) {
+      const topArticles = analyzedArticles
+        .sort((a, b) => (b.importanceScore || 0) - (a.importanceScore || 0))
+        .slice(0, 10);
+
+      // Build Article objects from analyzed data for email
+      const articleObjs = topArticles.map((a, i) => ({
+        id: i,
+        reportId,
+        title: a.title,
+        titleZh: a.titleZh || a.title,
+        url: a.url,
+        source: a.source,
+        category: a.category,
+        summaryEn: a.summaryEn || null,
+        summaryZh: a.summaryZh || null,
+        importanceScore: a.importanceScore,
+        authors: a.authors || null,
+        publishedAt: a.publishedAt || null,
+        rawContent: null,
+        createdAt: new Date(),
+      }));
+
+      const emailResult = await sendDailyReportToSubscribers(finalReport, articleObjs as import('../drizzle/schema').Article[]).catch((e) => {
+        console.warn(`[Pipeline] Email send failed:`, e);
+        return { sent: 0, failed: 0 };
+      });
+      console.log(`[Pipeline] 📧 Emails: ${emailResult.sent} sent, ${emailResult.failed} failed`);
+    }
 
     // Notify owner
     await notifyOwner({

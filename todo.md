@@ -65,3 +65,15 @@
 - [x] Admin panel: show active LLM provider + cost estimate per report
 - [x] OpenClaw 24h automation: docker-compose.yml + cron config + deployment guide
 - [x] Test external API analysis end-to-end (DeepSeek confirmed active, $0.01232/day)
+
+## Email Subscription + OpenClaw 24h Automation (v1.4) ✅
+- [x] DB: add email_subscriptions table (email, name, locale, active, token)
+- [x] Server: email sending engine (Resend API, HTML template with PDF link)
+- [x] Server: subscribe/unsubscribe/stats tRPC procedures
+- [x] Server: sendDailyReportToSubscribers() — sends PDF + top 10 articles
+- [x] Pipeline: auto-trigger email after report generation completes (Step 6)
+- [x] Frontend: subscription form on home page (locale toggle zh/en)
+- [x] Frontend: /unsubscribe page with token-based one-click unsubscribe
+- [x] Admin: subscriber count + last send status in admin panel
+- [x] OpenClaw: one-click install script (setup.sh) with cron auto-config
+- [x] 19 tests passing, TypeScript zero errors

@@ -12,6 +12,11 @@ import {
 } from "./db";
 import { runDailyPipeline, getTodayDate } from "./pipeline";
 import { getActiveProvider, PROVIDER_COSTS } from "./llmClient";
+import {
+  subscribeEmail,
+  unsubscribeByToken,
+  getSubscriberStats,
+} from "./emailService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -160,6 +165,37 @@ export const appRouter = router({
       };
     }),
   }),
+
+  /** Email subscription management */
+  email: router({
+    /** Subscribe to daily reports */
+    subscribe: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          name: z.string().max(128).optional(),
+          locale: z.enum(["en", "zh"]).default("zh"),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return subscribeEmail(input.email, input.name, input.locale);
+      }),
+
+    /** Unsubscribe by token (from email link) */
+    unsubscribe: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        const ok = await unsubscribeByToken(input.token);
+        return { success: ok };
+      }),
+
+    /** Get subscriber stats (admin only) */
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      return getSubscriberStats();
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
+

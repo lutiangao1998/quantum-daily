@@ -95,3 +95,29 @@ export const articles = mysqlTable("articles", {
 
 export type Article = typeof articles.$inferSelect;
 export type InsertArticle = typeof articles.$inferInsert;
+
+/**
+ * Email subscribers for daily quantum report delivery
+ */
+export const emailSubscriptions = mysqlTable("email_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Subscriber email address */
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  /** Subscriber display name (optional) */
+  name: varchar("name", { length: 128 }),
+  /** Preferred language: en or zh */
+  locale: mysqlEnum("locale", ["en", "zh"]).default("zh").notNull(),
+  /** Whether subscription is active */
+  active: mysqlEnum("active", ["yes", "no"]).default("yes").notNull(),
+  /** Secure token for one-click unsubscribe links */
+  unsubscribeToken: varchar("unsubscribeToken", { length: 64 }).notNull().unique(),
+  /** Last email sent at */
+  lastSentAt: timestamp("lastSentAt"),
+  /** Total emails sent */
+  sentCount: int("sentCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailSubscription = typeof emailSubscriptions.$inferSelect;
+export type InsertEmailSubscription = typeof emailSubscriptions.$inferInsert;

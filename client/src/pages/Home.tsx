@@ -3,6 +3,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Atom,
   FileText,
@@ -17,6 +20,8 @@ import {
   Radio,
   Microscope,
   ChevronRight,
+  Mail,
+  CheckCircle2,
 } from "lucide-react";
 import {
   CATEGORY_META,
@@ -387,6 +392,114 @@ function LatestReportSection() {
   );
 }
 
+function SubscribeSection() {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [locale, setLocale] = useState<"zh" | "en">("zh");
+  const [done, setDone] = useState(false);
+
+  const subscribeMut = trpc.email.subscribe.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        setDone(true);
+        toast.success(locale === "zh" ? "订阅成功！欢迎邮件已发送。" : "Subscribed! Welcome email sent.");
+      } else {
+        toast.info(data.message);
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <section className="py-20 border-t border-border/30">
+      <div className="container">
+        <div className="max-w-xl mx-auto text-center">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
+            <Mail className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Daily Email Digest</h2>
+          <p className="text-sm text-muted-foreground mb-1">每日量子资讯邮件推送</p>
+          <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+            Get the full quantum intelligence report delivered to your inbox every morning — including PDF download, bilingual summaries, and top article links.
+          </p>
+
+          {done ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+              <p className="text-foreground font-semibold">
+                {locale === "zh" ? "订阅成功！" : "Subscribed!"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {locale === "zh"
+                  ? "您将在每天报告生成后收到邮件。"
+                  : "You'll receive an email after each daily report is generated."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder={locale === "zh" ? "您的姓名（可选）" : "Your name (optional)"}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-card/50 border-border/50"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder={locale === "zh" ? "您的邮箱地址" : "Your email address"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-card/50 border-border/50 flex-1"
+                />
+                <Button
+                  onClick={() => subscribeMut.mutate({ email, name: name || undefined, locale })}
+                  disabled={!email || subscribeMut.isPending}
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white flex-shrink-0"
+                >
+                  <Mail className="w-4 h-4" />
+                  {subscribeMut.isPending
+                    ? (locale === "zh" ? "订阅中..." : "Subscribing...")
+                    : (locale === "zh" ? "订阅" : "Subscribe")}
+                </Button>
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setLocale("zh")}
+                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                    locale === "zh"
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border/40 text-muted-foreground hover:border-border"
+                  }`}
+                >
+                  中文报告
+                </button>
+                <button
+                  onClick={() => setLocale("en")}
+                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                    locale === "en"
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border/40 text-muted-foreground hover:border-border"
+                  }`}
+                >
+                  English Report
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {locale === "zh"
+                  ? "每天报告生成后自动发送 · 随时一键取消订阅"
+                  : "Sent automatically after each daily report · Unsubscribe anytime"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function OpenClawSection() {
   return (
     <section className="py-20 bg-card/20 border-t border-border/30">
@@ -449,6 +562,7 @@ export default function Home() {
       <FeaturesSection />
       <CategoriesSection />
       <LatestReportSection />
+      <SubscribeSection />
       <OpenClawSection />
       <Footer />
     </div>

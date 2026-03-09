@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Reports from "./pages/Reports";
 import ReportDetail from "./pages/ReportDetail";
 import Admin from "./pages/Admin";
+import Unsubscribe from "./pages/Unsubscribe";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/reports" component={Reports} />
       <Route path="/reports/:id" component={ReportDetail} />
       <Route path="/admin" component={Admin} />
+      <Route path="/unsubscribe" component={Unsubscribe} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
