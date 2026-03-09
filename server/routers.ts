@@ -11,6 +11,7 @@ import {
   getLatestCompletedReport,
 } from "./db";
 import { runDailyPipeline, getTodayDate } from "./pipeline";
+import { getActiveProvider, PROVIDER_COSTS } from "./llmClient";
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,6 +21,28 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+
+  /** LLM provider status — used by admin panel */
+  llm: router({
+    status: publicProcedure.query(() => {
+      const provider = getActiveProvider();
+      const costs = PROVIDER_COSTS[provider];
+      const hasDeepseek = !!process.env.DEEPSEEK_API_KEY;
+      const hasOpenai = !!process.env.OPENAI_API_KEY;
+      return {
+        activeProvider: provider,
+        activeLabel: costs.label,
+        inputCostPer1M: costs.input,
+        outputCostPer1M: costs.output,
+        hasDeepseek,
+        hasOpenai,
+        hasManus: true,
+        // Estimated cost per daily report (55 articles × ~800 tokens avg)
+        estimatedDailyCostUSD:
+          provider === "manus" ? null : ((55 * 800 * costs.input) / 1_000_000 + (55 * 400 * costs.output) / 1_000_000),
+      };
     }),
   }),
 

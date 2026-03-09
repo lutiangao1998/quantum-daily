@@ -8,4 +8,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   webhookSecret: process.env.WEBHOOK_SECRET ?? "",
+  // External LLM providers (optional — falls back to Manus built-in)
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
 };

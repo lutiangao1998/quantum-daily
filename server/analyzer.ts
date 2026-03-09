@@ -1,4 +1,4 @@
-import { invokeLLM } from "./_core/llm";
+import { callLLM, getActiveProvider, estimateCost } from "./llmClient";
 import type { RawArticle } from "./crawler";
 
 export type QuantumCategory =
@@ -23,6 +23,11 @@ export interface ReportSummary {
   titleZh: string;
 }
 
+/** Track total cost for a pipeline run */
+let _runCostUSD = 0;
+export function getRunCost(): number { return _runCostUSD; }
+export function resetRunCost(): void { _runCostUSD = 0; }
+
 const CATEGORY_DESCRIPTIONS: Record<QuantumCategory, string> = {
   quantum_computing:
     "Quantum computing hardware, algorithms, error correction, qubit technologies",
@@ -35,24 +40,30 @@ const CATEGORY_DESCRIPTIONS: Record<QuantumCategory, string> = {
   general: "General quantum physics, policy, investment, or multi-topic",
 };
 
-/** Analyze a batch of articles with AI */
+/** Analyze a batch of articles with AI (uses DeepSeek > OpenAI > Manus) */
 export async function analyzeArticles(
   rawArticles: RawArticle[]
 ): Promise<AnalyzedArticle[]> {
+  resetRunCost();
+  const provider = getActiveProvider();
+  console.log(`[Analyzer] Using LLM provider: ${provider}`);
+
   const results: AnalyzedArticle[] = [];
 
   // Process in batches of 5 to avoid token limits
   const BATCH_SIZE = 5;
   for (let i = 0; i < rawArticles.length; i += BATCH_SIZE) {
     const batch = rawArticles.slice(i, i + BATCH_SIZE);
+    console.log(`[Analyzer] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(rawArticles.length / BATCH_SIZE)} (${batch.length} articles)...`);
     const batchResults = await analyzeBatch(batch);
     results.push(...batchResults);
-    // Small delay between batches
+    // Small delay between batches to respect rate limits
     if (i + BATCH_SIZE < rawArticles.length) {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 300));
     }
   }
 
+  console.log(`[Analyzer] Done. Total estimated cost: $${_runCostUSD.toFixed(4)} USD`);
   return results;
 }
 
@@ -63,7 +74,7 @@ async function analyzeBatch(
     index: idx,
     title: a.title,
     source: a.source,
-    content: (a.rawContent || "").slice(0, 500),
+    content: (a.rawContent || "").slice(0, 600),
     authors: a.authors || "",
   }));
 
@@ -84,69 +95,33 @@ For each article, provide:
 Articles:
 ${JSON.stringify(articlesJson, null, 2)}
 
-Respond with a JSON array of objects with fields: index, titleZh, summaryEn, summaryZh, category, importanceScore`;
+Respond with a JSON object: {"results": [...]} where each item has: index, titleZh, summaryEn, summaryZh, category, importanceScore`;
 
   try {
-    const response = await invokeLLM({
+    const result = await callLLM({
       messages: [
         {
           role: "system",
           content:
-            "You are a quantum technology expert analyst. Always respond with valid JSON only, no markdown.",
+            "You are a quantum technology expert analyst. Always respond with valid JSON only, no markdown code blocks.",
         },
         { role: "user", content: prompt },
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "article_analysis",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              results: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    index: { type: "integer" },
-                    titleZh: { type: "string" },
-                    summaryEn: { type: "string" },
-                    summaryZh: { type: "string" },
-                    category: {
-                      type: "string",
-                      enum: [
-                        "quantum_computing",
-                        "quantum_communication",
-                        "quantum_sensing",
-                        "quantum_cryptography",
-                        "general",
-                      ],
-                    },
-                    importanceScore: { type: "number" },
-                  },
-                  required: [
-                    "index",
-                    "titleZh",
-                    "summaryEn",
-                    "summaryZh",
-                    "category",
-                    "importanceScore",
-                  ],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["results"],
-            additionalProperties: false,
-          },
-        },
-      },
+      temperature: 0.2,
+      maxTokens: 3000,
+      responseFormat: "json",
     });
 
-    const rawContent = response.choices[0]?.message?.content || "{}";
-    const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
-    const parsed = JSON.parse(content) as {
+    // Track cost
+    if (result.inputTokens && result.outputTokens) {
+      _runCostUSD += estimateCost(result.provider, result.inputTokens, result.outputTokens);
+    }
+
+    // Parse response — strip markdown code fences if present
+    let jsonStr = result.content.trim();
+    jsonStr = jsonStr.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+
+    const parsed = JSON.parse(jsonStr) as {
       results: Array<{
         index: number;
         titleZh: string;
@@ -164,7 +139,7 @@ Respond with a JSON array of objects with fields: index, titleZh, summaryEn, sum
         titleZh: analysis?.titleZh || article.title,
         summaryEn: analysis?.summaryEn || "Summary not available.",
         summaryZh: analysis?.summaryZh || "摘要暂不可用。",
-        category: analysis?.category || "general",
+        category: (analysis?.category as QuantumCategory) || "general",
         importanceScore: analysis?.importanceScore ?? 5.0,
       };
     });
@@ -207,12 +182,12 @@ export async function generateReportSummary(
   );
 
   try {
-    const response = await invokeLLM({
+    const result = await callLLM({
       messages: [
         {
           role: "system",
           content:
-            "You are a quantum technology intelligence analyst writing executive briefings. Respond with valid JSON only.",
+            "You are a quantum technology intelligence analyst writing executive briefings. Respond with valid JSON only, no markdown.",
         },
         {
           role: "user",
@@ -224,36 +199,23 @@ Category breakdown: ${JSON.stringify(categoryCounts)}
 Top articles:
 ${articleSummaries}
 
-Provide:
-1. titleEn: Report title in English (e.g. "Quantum Daily Intelligence Report — March 9, 2026")
-2. titleZh: Report title in Chinese
-3. summaryEn: 3-4 paragraph executive summary in English covering key developments, trends, and notable research
-4. summaryZh: Same executive summary in Chinese (3-4 paragraphs)`,
+Respond with JSON: {"titleEn": "...", "titleZh": "...", "summaryEn": "3-4 paragraphs...", "summaryZh": "3-4 paragraphs in Chinese..."}`,
         },
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "report_summary",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              titleEn: { type: "string" },
-              titleZh: { type: "string" },
-              summaryEn: { type: "string" },
-              summaryZh: { type: "string" },
-            },
-            required: ["titleEn", "titleZh", "summaryEn", "summaryZh"],
-            additionalProperties: false,
-          },
-        },
-      },
+      temperature: 0.4,
+      maxTokens: 2000,
+      responseFormat: "json",
     });
 
-    const rawContent2 = response.choices[0]?.message?.content || "{}";
-    const content2 = typeof rawContent2 === "string" ? rawContent2 : JSON.stringify(rawContent2);
-    return JSON.parse(content2) as ReportSummary;
+    // Track cost
+    if (result.inputTokens && result.outputTokens) {
+      _runCostUSD += estimateCost(result.provider, result.inputTokens, result.outputTokens);
+    }
+
+    let jsonStr = result.content.trim();
+    jsonStr = jsonStr.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+
+    return JSON.parse(jsonStr) as ReportSummary;
   } catch (e) {
     console.error("[Analyzer] Report summary error:", e);
     return {

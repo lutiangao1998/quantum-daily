@@ -57,3 +57,11 @@
 - [x] Fix analyzer: real LLM calls confirmed working
 - [x] Fix PDF generator: Puppeteer + system Chromium confirmed working
 - [x] End-to-end test: 55 articles collected, PDF at CDN ✅
+
+## External LLM Integration (v1.3)
+- [x] Add DEEPSEEK_API_KEY and OPENAI_API_KEY env secrets
+- [x] Rewrite analyzer: multi-provider LLM (DeepSeek > OpenAI > Manus fallback)
+- [x] LLM provider config: model selection, temperature, max tokens
+- [x] Admin panel: show active LLM provider + cost estimate per report
+- [x] OpenClaw 24h automation: docker-compose.yml + cron config + deployment guide
+- [x] Test external API analysis end-to-end (DeepSeek confirmed active, $0.01232/day)

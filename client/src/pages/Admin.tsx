@@ -11,7 +11,7 @@ import {
   Play, RefreshCw, CheckCircle2, XCircle, Clock, Loader2,
   Zap, Globe, FileText, Copy, ExternalLink, Terminal,
   MessageSquare, Webhook, Shield, BookOpen, ChevronRight,
-  Activity, Database, AlertCircle
+  Activity, Database, AlertCircle, Cpu, DollarSign, TrendingDown
 } from "lucide-react";
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -75,6 +75,7 @@ export default function Admin() {
   );
 
   const recentReports = trpc.reports.list.useQuery({ limit: 5, offset: 0 });
+  const llmStatus = trpc.llm.status.useQuery();
 
   const triggerMutation = trpc.reports.triggerGeneration.useMutation({
     onSuccess: (data) => {
@@ -457,6 +458,110 @@ curl -X POST "${webhookUrl}" \\
           </div>
         </section>
 
+        {/* ── LLM Provider Status ── */}
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-indigo-400" />
+            AI Analysis Engine
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Active Provider */}
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs text-slate-400 uppercase tracking-wider">Active Provider</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {llmStatus.isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        llmStatus.data?.activeProvider === 'deepseek' ? 'bg-blue-400' :
+                        llmStatus.data?.activeProvider === 'openai' ? 'bg-green-400' : 'bg-slate-400'
+                      } animate-pulse`} />
+                      <span className="text-white font-semibold text-sm">{llmStatus.data?.activeLabel}</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-slate-400">
+                      <div className="flex justify-between">
+                        <span>DeepSeek</span>
+                        <Badge className={`text-xs ${llmStatus.data?.hasDeepseek ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
+                          {llmStatus.data?.hasDeepseek ? '✓ Configured' : 'Not set'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>OpenAI</span>
+                        <Badge className={`text-xs ${llmStatus.data?.hasOpenai ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
+                          {llmStatus.data?.hasOpenai ? '✓ Configured' : 'Not set'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Manus (fallback)</span>
+                        <Badge className="text-xs bg-slate-600/30 text-slate-400 border-slate-600">✓ Always on</Badge>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cost per report */}
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs text-slate-400 uppercase tracking-wider">Est. Cost / Daily Report</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {llmStatus.data?.estimatedDailyCostUSD != null ? (
+                  <>
+                    <div className="flex items-end gap-1 mb-1">
+                      <span className="text-3xl font-bold text-emerald-400">
+                        ${(llmStatus.data.estimatedDailyCostUSD * 100).toFixed(3)}¢
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">per day (~55 articles)</p>
+                    <p className="text-xs text-slate-500 mt-2">
+                      ~${(llmStatus.data.estimatedDailyCostUSD * 365).toFixed(2)} / year
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-slate-400 mb-1">Manus Credits</div>
+                    <p className="text-xs text-slate-500">Add DeepSeek key to switch to paid API (much cheaper)</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cost comparison */}
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3" /> Cost Comparison
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[
+                  { label: 'DeepSeek Chat', costPerDay: 0.0062, color: 'text-blue-400', active: llmStatus.data?.activeProvider === 'deepseek' },
+                  { label: 'GPT-4o Mini', costPerDay: 0.0099, color: 'text-green-400', active: llmStatus.data?.activeProvider === 'openai' },
+                  { label: 'GPT-4o', costPerDay: 0.198, color: 'text-yellow-400', active: false },
+                  { label: 'Manus Credits', costPerDay: null, color: 'text-slate-400', active: llmStatus.data?.activeProvider === 'manus' },
+                ].map(item => (
+                  <div key={item.label} className={`flex items-center justify-between text-xs p-1.5 rounded ${
+                    item.active ? 'bg-indigo-500/10 border border-indigo-500/20' : ''
+                  }`}>
+                    <span className={item.color}>{item.label}{item.active ? ' ←' : ''}</span>
+                    <span className="text-slate-400 font-mono">
+                      {item.costPerDay != null ? `$${item.costPerDay.toFixed(4)}/day` : 'credits'}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <Separator className="bg-slate-800" />
+
         {/* ── Token Saving Explanation ── */}
         <section>
           <Card className="bg-gradient-to-br from-indigo-950/50 to-slate-900 border-indigo-800/40">
@@ -475,12 +580,13 @@ curl -X POST "${webhookUrl}" \\
                   </ul>
                 </div>
                 <div>
-                  <p className="text-slate-300 font-medium mb-2">With OpenClaw (new way)</p>
+                  <p className="text-slate-300 font-medium mb-2">With DeepSeek + OpenClaw (new way)</p>
                   <ul className="space-y-1 text-slate-400 text-xs">
-                    <li>✅ OpenClaw reads pre-generated JSON from <code className="text-indigo-300">/api/webhook/latest</code></li>
-                    <li>✅ <strong className="text-white">Zero LLM calls</strong> per query — pure HTTP fetch</li>
-                    <li>✅ AI analysis runs <strong className="text-white">once per day</strong> during report generation</li>
-                    <li>✅ Unlimited WhatsApp/Telegram queries at no extra token cost</li>
+                    <li>✅ AI analysis uses <strong className="text-white">DeepSeek</strong> — not Manus credits</li>
+                    <li>✅ OpenClaw reads pre-generated JSON — <strong className="text-white">zero LLM per query</strong></li>
+                    <li>✅ AI analysis runs <strong className="text-white">once per day</strong> at ~$0.006</li>
+                    <li>✅ Unlimited WhatsApp/Telegram queries at no extra cost</li>
+                    <li>✅ Manus only used as emergency fallback</li>
                   </ul>
                 </div>
               </div>
