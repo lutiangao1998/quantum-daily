@@ -22,7 +22,9 @@ import {
   ChevronRight,
   Mail,
   CheckCircle2,
+  BarChart3,
 } from "lucide-react";
+import { StockTicker } from "@/components/StockTicker";
 import {
   CATEGORY_META,
   formatReportDate,
@@ -92,6 +94,9 @@ function NavBar() {
         <div className="flex items-center gap-4">
           <Link href="/reports" className="text-sm text-muted-foreground hover:text-foreground transition-colors no-underline">
             Reports
+          </Link>
+          <Link href="/search" className="text-sm text-muted-foreground hover:text-foreground transition-colors no-underline">
+            Search
           </Link>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
@@ -500,6 +505,25 @@ function SubscribeSection() {
   );
 }
 
+function StockTickerSection() {
+  return (
+    <section className="py-20">
+      <div className="container">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Quantum Company Stocks</h2>
+            <p className="text-sm text-muted-foreground">量子公司股价行情</p>
+          </div>
+        </div>
+        <StockTicker />
+      </div>
+    </section>
+  );
+}
+
 function OpenClawSection() {
   return (
     <section className="py-20 bg-card/20 border-t border-border/30">
@@ -561,6 +585,7 @@ export default function Home() {
       <StatsSection />
       <FeaturesSection />
       <CategoriesSection />
+      <StockTickerSection />
       <LatestReportSection />
       <SubscribeSection />
       <OpenClawSection />

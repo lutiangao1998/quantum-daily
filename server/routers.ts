@@ -17,6 +17,8 @@ import {
   unsubscribeByToken,
   getSubscriberStats,
 } from "./emailService";
+import { stockRouter } from "./stockRoutes";
+import { searchRouter } from "./searchRoutes";
 
 export const appRouter = router({
   system: systemRouter,
@@ -166,6 +168,12 @@ export const appRouter = router({
     }),
   }),
 
+  /** Stock quotes for quantum companies */
+  stocks: stockRouter,
+
+  /** Article search */
+  search: searchRouter,
+
   /** Email subscription management */
   email: router({
     /** Subscribe to daily reports */
@@ -195,6 +203,7 @@ export const appRouter = router({
       return getSubscriberStats();
     }),
   }),
+
 });
 
 export type AppRouter = typeof appRouter;

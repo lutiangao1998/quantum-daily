@@ -105,36 +105,11 @@ async function crawlGoogleNews(): Promise<RawArticle[]> {
   return articles;
 }
 
-/** Nature News RSS */
-async function crawlNature(): Promise<RawArticle[]> {
+/** Hacker News quantum computing stories */
+async function crawlHackerNews(): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(
-      "https://www.nature.com/subjects/quantum-physics.rss"
-    );
-    const articles: RawArticle[] = [];
-    for (const item of (feed.items || []).slice(0, 15)) {
-      if (!item.title || !item.link) continue;
-      articles.push({
-        title: item.title.replace(/\n/g, " ").trim(),
-        url: item.link,
-        source: "Nature",
-        publishedAt: item.pubDate ? new Date(item.pubDate) : undefined,
-        rawContent: item.contentSnippet || item.content || "",
-        authors: item.creator || "",
-      });
-    }
-    return articles;
-  } catch (e) {
-    console.error("[Crawler] Nature error:", e);
-    return [];
-  }
-}
-
-/** Reuters technology news RSS */
-async function crawlReuters(): Promise<RawArticle[]> {
-  try {
-    const feed = await rssParser.parseURL(
-      "https://feeds.reuters.com/reuters/technology"
+      "https://news.ycombinator.com/rss"
     );
     const articles: RawArticle[] = [];
     for (const item of (feed.items || []).slice(0, 30)) {
@@ -144,14 +119,39 @@ async function crawlReuters(): Promise<RawArticle[]> {
       articles.push({
         title: item.title.replace(/\n/g, " ").trim(),
         url: item.link,
-        source: "Reuters",
+        source: "Hacker News",
         publishedAt: item.pubDate ? new Date(item.pubDate) : undefined,
         rawContent: item.contentSnippet || "",
       });
     }
     return articles;
   } catch (e) {
-    console.error("[Crawler] Reuters error:", e);
+    console.error("[Crawler] Hacker News error:", e);
+    return [];
+  }
+}
+
+/** MIT Technology Review quantum news */
+async function crawlMITTechReview(): Promise<RawArticle[]> {
+  try {
+    const feed = await rssParser.parseURL(
+      "https://www.technologyreview.com/feed/?tagName=quantum-computing"
+    );
+    const articles: RawArticle[] = [];
+    for (const item of (feed.items || []).slice(0, 15)) {
+      if (!item.title || !item.link) continue;
+      articles.push({
+        title: item.title.replace(/\n/g, " ").trim(),
+        url: item.link,
+        source: "MIT Technology Review",
+        publishedAt: item.pubDate ? new Date(item.pubDate) : undefined,
+        rawContent: item.contentSnippet || item.content || "",
+        authors: item.creator || "",
+      });
+    }
+    return articles;
+  } catch (e) {
+    console.error("[Crawler] MIT Technology Review error:", e);
     return [];
   }
 }
@@ -219,12 +219,12 @@ function deduplicateArticles(articles: RawArticle[]): RawArticle[] {
 export async function crawlAllSources(): Promise<RawArticle[]> {
   console.log("[Crawler] Starting all source crawls...");
 
-  const [arxiv, googleNews, nature, reuters, ieee, physorg] =
+  const [arxiv, googleNews, hackerNews, mitTechReview, ieee, physorg] =
     await Promise.allSettled([
       crawlArXiv(),
       crawlGoogleNews(),
-      crawlNature(),
-      crawlReuters(),
+      crawlHackerNews(),
+      crawlMITTechReview(),
       crawlIEEE(),
       crawlPhysOrg(),
     ]);
@@ -232,8 +232,8 @@ export async function crawlAllSources(): Promise<RawArticle[]> {
   const all: RawArticle[] = [
     ...(arxiv.status === "fulfilled" ? arxiv.value : []),
     ...(googleNews.status === "fulfilled" ? googleNews.value : []),
-    ...(nature.status === "fulfilled" ? nature.value : []),
-    ...(reuters.status === "fulfilled" ? reuters.value : []),
+    ...(hackerNews.status === "fulfilled" ? hackerNews.value : []),
+    ...(mitTechReview.status === "fulfilled" ? mitTechReview.value : []),
     ...(ieee.status === "fulfilled" ? ieee.value : []),
     ...(physorg.status === "fulfilled" ? physorg.value : []),
   ];

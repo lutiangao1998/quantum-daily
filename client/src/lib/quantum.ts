@@ -70,6 +70,22 @@ export function formatReportDateZh(dateStr: string): string {
   return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
 }
 
+export function getCategoryLabel(category: string): string {
+  const meta = CATEGORY_META[category as QuantumCategory];
+  return meta ? meta.en : category;
+}
+
+export function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    quantum_computing: "bg-blue-500/20 text-blue-300",
+    quantum_communication: "bg-purple-500/20 text-purple-300",
+    quantum_sensing: "bg-green-500/20 text-green-300",
+    quantum_cryptography: "bg-red-500/20 text-red-300",
+    general: "bg-slate-500/20 text-slate-300",
+  };
+  return colors[category] || colors.general;
+}
+
 export const STATUS_META = {
   pending: { label: "Pending", labelZh: "等待中", color: "text-slate-400" },
   crawling: { label: "Crawling", labelZh: "抓取中", color: "text-blue-400" },

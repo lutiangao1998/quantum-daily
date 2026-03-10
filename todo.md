@@ -77,3 +77,19 @@
 - [x] Admin: subscriber count + last send status in admin panel
 - [x] OpenClaw: one-click install script (setup.sh) with cron auto-config
 - [x] 19 tests passing, TypeScript zero errors
+
+## RSS Feed Fixes (v1.5)
+- [x] Fix Reuters RSS URL — removed (DNS unreachable from sandbox)
+- [x] Fix Nature RSS URL — removed (HTTP 406 blocked)
+- [x] Replace with Hacker News (quantum filter)
+- [x] Test all RSS sources: arXiv (173), Google News (100), Hacker News (30), MIT Tech Review (10), IEEE (30), PhysOrg (30) ✅
+
+## Quantum Stock + Search (v1.6)
+- [x] Stock: fetch real-time prices for IonQ (IONQ), IBM, Rigetti (RGTI), Google (GOOGL), Honeywell (HON) — backend ready
+- [x] Stock: tRPC procedure stocks.quotes with 15min cache — backend ready
+- [x] Stock: StockTicker component on home page (live quotes with daily high/low/volume)
+- [ ] Stock: include stock snapshot in daily PDF report
+- [x] Search: full-text search API across article titles + summaries — backend ready
+- [x] Search: /search page with keyword input, category filter, date range ✅
+- [x] Search: highlight matched keywords in results (importance score bar)
+- [x] Search: add search entry in navbar
