@@ -107,5 +107,6 @@
 
 ## Add D-Wave Stock (v1.7.3)
 - [x] Add QRDO (D-Wave) to QUANTUM_STOCKS list ✅
+- [x] Fix grid layout to display 6 stocks in one row (changed lg:grid-cols-5 to lg:grid-cols-6) ✅
 - [x] Test D-Wave stock displays correctly (all tests passing) ✅
 - [x] Verify all 6 stocks display in ticker (IONQ, IBM, RGTI, GOOGL, HON, QRDO) ✅

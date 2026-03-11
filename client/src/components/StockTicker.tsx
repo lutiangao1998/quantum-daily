@@ -34,8 +34,8 @@ export function StockTicker() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {[...Array(5)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        {[...Array(6)].map((_, i) => (
           <div
             key={i}
             className="h-40 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg animate-pulse"
@@ -46,7 +46,7 @@ export function StockTicker() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
       {stocks.map((stock) => {
         const isPositive = stock.change >= 0;
         const changeColor = isPositive ? "text-green-400" : "text-red-400";
