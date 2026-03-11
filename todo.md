@@ -104,3 +104,8 @@
 - [x] Debug: verify Yahoo Finance API returns correct previousClose value
 - [x] Fix: ensure change = current price - previous close (using historical data) ✅
 - [x] Verify: all tests passing (21/21) ✅
+
+## Add D-Wave Stock (v1.7.3)
+- [x] Add QRDO (D-Wave) to QUANTUM_STOCKS list ✅
+- [x] Test D-Wave stock displays correctly (all tests passing) ✅
+- [x] Verify all 6 stocks display in ticker (IONQ, IBM, RGTI, GOOGL, HON, QRDO) ✅

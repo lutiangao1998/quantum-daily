@@ -26,6 +26,7 @@ const QUANTUM_STOCKS = [
   { symbol: "RGTI", name: "Rigetti Computing" },
   { symbol: "GOOGL", name: "Alphabet Inc." },
   { symbol: "HON", name: "Honeywell International" },
+  { symbol: "QRDO", name: "D-Wave Systems" },
 ];
 
 export async function getStockQuote(symbol: string): Promise<StockQuote | null> {
