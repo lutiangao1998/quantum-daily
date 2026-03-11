@@ -27,7 +27,7 @@ const QUANTUM_STOCKS = [
   { symbol: "RGTI", name: "Rigetti Computing" },
   { symbol: "GOOGL", name: "Alphabet Inc." },
   { symbol: "HON", name: "Honeywell International" },
-  { symbol: "QRDO", name: "D-Wave Systems" },
+  { symbol: "QBTS", name: "D-Wave Quantum Inc." },
 ];
 
 // Mock data for fallback when API is exhausted
@@ -92,15 +92,15 @@ const MOCK_STOCKS: Record<string, StockQuote> = {
     currency: "USD",
     timestamp: Date.now(),
   },
-  QRDO: {
-    symbol: "QRDO",
-    name: "D-Wave Systems",
-    price: 8.45,
-    change: 0.15,
-    changePercent: 0.0182,
-    dayHigh: 8.65,
-    dayLow: 8.25,
-    volume: 1200000,
+  QBTS: {
+    symbol: "QBTS",
+    name: "D-Wave Quantum Inc.",
+    price: 18.76,
+    change: -0.28,
+    changePercent: -0.0147,
+    dayHigh: 19.05,
+    dayLow: 18.66,
+    volume: 21570947,
     currency: "USD",
     timestamp: Date.now(),
   },

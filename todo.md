@@ -110,3 +110,8 @@
 - [x] Fix grid layout to display 6 stocks in one row (changed lg:grid-cols-5 to lg:grid-cols-6) ✅
 - [x] Test D-Wave stock displays correctly (all tests passing) ✅
 - [x] Verify all 6 stocks display in ticker (IONQ, IBM, RGTI, GOOGL, HON, QRDO) ✅
+
+## Fix D-Wave Ticker Symbol (v1.7.6)
+- [x] Change D-Wave ticker from QRDO to QBTS (correct NYSE symbol) ✅
+- [x] Update mock data with correct price ($18.76, -0.28, -1.47%) ✅
+- [x] All tests passing (21/21) ✅
