@@ -99,3 +99,8 @@
 - [x] Add trading platform links (TradingView, Yahoo Finance, Moomoo) ✅
 - [x] Make stock cards clickable with external links ✅
 - [x] Test all trading platform links (all tests passing) ✅
+
+## Stock Ticker Bug Fix (v1.7.2)
+- [x] Debug: verify Yahoo Finance API returns correct previousClose value
+- [x] Fix: ensure change = current price - previous close (using historical data) ✅
+- [x] Verify: all tests passing (21/21) ✅

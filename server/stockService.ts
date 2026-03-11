@@ -36,14 +36,13 @@ export async function getStockQuote(symbol: string): Promise<StockQuote | null> 
       return cached.data;
     }
 
-    // Fetch from Yahoo Finance API
+    // Fetch from Yahoo Finance API with 5-day range to get previous close
     const result = await callDataApi("YahooFinance/get_stock_chart", {
       query: {
         symbol: symbol.toUpperCase(),
         region: "US",
         interval: "1d",
-        range: "1d",
-        includeAdjustedClose: "true",
+        range: "5d",
       },
     });
 
@@ -54,15 +53,34 @@ export async function getStockQuote(symbol: string): Promise<StockQuote | null> 
 
     const chartData = apiResult.chart.result[0];
     const meta = chartData.meta as any;
+    const timestamps = chartData.timestamp as number[];
+    const closes = chartData.indicators?.quote?.[0]?.close as number[];
+
+    // Calculate real daily change from historical data
+    let change = 0;
+    let changePercent = 0;
+
+    const currentPrice = meta.regularMarketPrice || 0;
+
+    // If we have historical close data, use it to calculate real daily change
+    if (closes && closes.length >= 2) {
+      const previousClose = closes[closes.length - 2];
+      if (previousClose > 0) {
+        change = currentPrice - previousClose;
+        changePercent = change / previousClose;
+      }
+    } else if (meta.previousClose) {
+      // Fallback to API's previousClose if available
+      change = currentPrice - meta.previousClose;
+      changePercent = meta.previousClose > 0 ? change / meta.previousClose : 0;
+    }
 
     const quote: StockQuote = {
       symbol: meta.symbol,
       name: meta.longName || meta.symbol,
-      price: meta.regularMarketPrice || 0,
-      change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
-      changePercent:
-        ((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) /
-        (meta.previousClose || 1),
+      price: currentPrice,
+      change: change,
+      changePercent: changePercent,
       dayHigh: meta.regularMarketDayHigh || 0,
       dayLow: meta.regularMarketDayLow || 0,
       volume: meta.regularMarketVolume || 0,
@@ -95,5 +113,6 @@ export async function getAllQuantumStocks(): Promise<StockQuote[]> {
 
 export function formatStockChange(change: number, changePercent: number): string {
   const sign = change >= 0 ? "+" : "";
-  return `${sign}${change.toFixed(2)} (${sign}${(changePercent * 100).toFixed(2)}%)`;
+  const percentSign = changePercent >= 0 ? "+" : "";
+  return `${sign}${change.toFixed(2)} (${percentSign}${(changePercent * 100).toFixed(2)}%)`;
 }
