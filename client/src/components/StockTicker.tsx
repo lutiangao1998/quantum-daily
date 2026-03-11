@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 interface StockQuote {
@@ -14,6 +14,13 @@ interface StockQuote {
   volume: number;
   currency: string;
 }
+
+// Trading platform URLs
+const getTradingLinks = (symbol: string) => ({
+  tradingView: `https://www.tradingview.com/chart/?symbol=NASDAQ:${symbol}`,
+  yahoo: `https://finance.yahoo.com/quote/${symbol}`,
+  moomoo: `https://www.moomoo.com/us/quote/${symbol}`,
+});
 
 export function StockTicker() {
   const { data, isLoading } = trpc.stocks.quotes.useQuery();
@@ -31,7 +38,7 @@ export function StockTicker() {
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="h-32 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg animate-pulse"
+            className="h-40 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg animate-pulse"
           />
         ))}
       </div>
@@ -44,11 +51,12 @@ export function StockTicker() {
         const isPositive = stock.change >= 0;
         const changeColor = isPositive ? "text-green-400" : "text-red-400";
         const bgColor = isPositive ? "bg-green-500/10" : "bg-red-500/10";
+        const links = getTradingLinks(stock.symbol);
 
         return (
           <Card
             key={stock.symbol}
-            className={`p-4 border-0 ${bgColor} bg-gradient-to-br from-slate-800/50 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/50 transition-all`}
+            className={`p-4 border-0 ${bgColor} bg-gradient-to-br from-slate-800/50 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/50 transition-all cursor-pointer group`}
           >
             <div className="space-y-3">
               {/* Symbol & Name */}
@@ -62,8 +70,8 @@ export function StockTicker() {
                 ${stock.price.toFixed(2)}
               </div>
 
-              {/* Change */}
-              <div className={`flex items-center gap-2 ${changeColor} font-semibold`}>
+              {/* Change - Now showing real daily change */}
+              <div className={`flex items-center gap-2 ${changeColor} font-semibold text-sm`}>
                 {isPositive ? (
                   <TrendingUp size={16} />
                 ) : (
@@ -82,6 +90,40 @@ export function StockTicker() {
                 </div>
                 <div>
                   Low: <span className="text-slate-300">${stock.dayLow.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Trading Platform Links */}
+              <div className="pt-2 border-t border-slate-700/50 space-y-2">
+                <div className="text-xs text-slate-500 font-medium">Trade on:</div>
+                <div className="flex flex-col gap-1.5">
+                  <a
+                    href={links.tradingView}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-700/40 hover:bg-slate-600/60 text-slate-300 hover:text-white transition-all text-xs font-medium"
+                  >
+                    <span>TradingView</span>
+                    <ExternalLink size={12} />
+                  </a>
+                  <a
+                    href={links.yahoo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-700/40 hover:bg-slate-600/60 text-slate-300 hover:text-white transition-all text-xs font-medium"
+                  >
+                    <span>Yahoo Finance</span>
+                    <ExternalLink size={12} />
+                  </a>
+                  <a
+                    href={links.moomoo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-700/40 hover:bg-slate-600/60 text-slate-300 hover:text-white transition-all text-xs font-medium"
+                  >
+                    <span>Moomoo</span>
+                    <ExternalLink size={12} />
+                  </a>
                 </div>
               </div>
             </div>

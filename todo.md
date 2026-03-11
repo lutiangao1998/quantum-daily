@@ -93,3 +93,9 @@
 - [x] Search: /search page with keyword input, category filter, date range ✅
 - [x] Search: highlight matched keywords in results (importance score bar)
 - [x] Search: add search entry in navbar
+
+## Stock Ticker Improvements (v1.7.1)
+- [x] Fix daily change calculation (show real day change from previous close) ✅
+- [x] Add trading platform links (TradingView, Yahoo Finance, Moomoo) ✅
+- [x] Make stock cards clickable with external links ✅
+- [x] Test all trading platform links (all tests passing) ✅
