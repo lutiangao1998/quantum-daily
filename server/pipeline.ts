@@ -19,26 +19,21 @@ export function getYesterdayDate(): string {
   return yesterday.toISOString().split("T")[0]!;
 }
 
-/** Filter articles to only include those published on a specific date (UTC day) */
-function filterArticlesByDate(articles: RawArticle[], targetDate: string): RawArticle[] {
-  return articles.filter((article) => {
+/** Filter articles to only include those from the last 24 hours (rolling window) */
+function filterArticlesByLast24Hours(articles: RawArticle[]): RawArticle[] {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  const filtered = articles.filter((article) => {
     if (!article.publishedAt) {
       console.warn(`[Pipeline] Article "${article.title}" has no publishedAt date, skipping`);
       return false;
     }
-    const articleDate = article.publishedAt.toISOString().split("T")[0];
-    return articleDate === targetDate;
+    return article.publishedAt >= twentyFourHoursAgo && article.publishedAt <= now;
   });
-}
-
-/** Get articles for a specific report date (uses previous day's articles) */
-function getArticlesForReportDate(articles: RawArticle[], reportDate: string): RawArticle[] {
-  // Report for date X should contain articles from date X-1 (previous day)
-  const yesterday = new Date(reportDate);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const previousDay = yesterday.toISOString().split("T")[0]!;
   
-  return filterArticlesByDate(articles, previousDay);
+  console.log(`[Pipeline] 24-hour filter: ${now.toISOString()} - ${twentyFourHoursAgo.toISOString()}`);
+  return filtered;
 }
 
 /** Run the full daily pipeline for a given date */
@@ -112,13 +107,13 @@ export async function runDailyPipeline(reportDate?: string): Promise<{
       throw new Error("No articles collected from any source");
     }
 
-    // ── Step 1.5: Filter by date ───────────────────────────────────
-    console.log(`[Pipeline] Step 1.5: Filtering articles by date...`);
-    const rawArticles = getArticlesForReportDate(allRawArticles, date);
-    console.log(`[Pipeline] Filtered: ${allRawArticles.length} → ${rawArticles.length} articles for ${date}`);
+    // ── Step 1.5: Filter by 24-hour rolling window ────────────────────────────────
+    console.log(`[Pipeline] Step 1.5: Filtering articles from last 24 hours...`);
+    const rawArticles = filterArticlesByLast24Hours(allRawArticles);
+    console.log(`[Pipeline] Filtered: ${allRawArticles.length} → ${rawArticles.length} articles from last 24 hours`);
 
     if (rawArticles.length === 0) {
-      throw new Error(`No articles found for ${date}. All ${allRawArticles.length} articles were from other dates.`);
+      throw new Error(`No articles found in the last 24 hours. All ${allRawArticles.length} articles were older.`);
     }
 
     // ── Step 2: AI Analysis ────────────────────────────────────────

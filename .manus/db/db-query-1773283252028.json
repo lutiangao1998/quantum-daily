@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, reportDate, articleCount, status FROM reports ORDER BY reportDate DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3eaixnMivZqMP8u.13435d193949 --database j6GvqM4GnYvaV2PxN3zPT8 --execute SELECT id, reportDate, articleCount, status FROM reports ORDER BY reportDate DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "90001",
+      "reportDate": "2026-03-12",
+      "articleCount": "53",
+      "status": "completed"
+    },
+    {
+      "id": "60001",
+      "reportDate": "2026-03-11",
+      "articleCount": "62",
+      "status": "completed"
+    },
+    {
+      "id": "30001",
+      "reportDate": "2026-03-10",
+      "articleCount": "70",
+      "status": "completed"
+    },
+    {
+      "id": "1",
+      "reportDate": "2026-03-09",
+      "articleCount": "55",
+      "status": "completed"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\treportDate\tarticleCount\tstatus\n90001\t2026-03-12\t53\tcompleted\n60001\t2026-03-11\t62\tcompleted\n30001\t2026-03-10\t70\tcompleted\n1\t2026-03-09\t55\tcompleted\n",
+  "stderr": "",
+  "execution_time_ms": 1566
+}

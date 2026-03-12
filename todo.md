@@ -121,3 +121,9 @@
 - [x] Fix report generation to validate article dates ✅
 - [x] Remove old/stale articles from daily reports ✅
 - [x] Test report generation with date validation (all tests passing) ✅
+
+## Bug Fix: 24-Hour Rolling Window (v1.7.8)
+- [x] Delete all old reports from database ✅
+- [x] Replace calendar-day filtering with 24-hour rolling window ✅
+- [x] Reports now include articles from last 24 hours (not previous calendar day) ✅
+- [x] All tests passing (21/21) ✅
