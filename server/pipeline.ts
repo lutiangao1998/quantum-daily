@@ -1,7 +1,7 @@
 import { getDb } from "./db";
 import { reports, articles } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { crawlAllSources } from "./crawler";
+import { crawlAllSources, type RawArticle } from "./crawler";
 import { analyzeArticles, generateReportSummary } from "./analyzer";
 import { buildReportHTML, generateAndUploadPDF } from "./pdfGenerator";
 import { notifyOwner } from "./_core/notification";
@@ -10,6 +10,35 @@ import { sendDailyReportToSubscribers } from "./emailService";
 /** Get today's date in YYYY-MM-DD format (UTC) */
 export function getTodayDate(): string {
   return new Date().toISOString().split("T")[0]!;
+}
+
+/** Get yesterday's date in YYYY-MM-DD format (UTC) */
+export function getYesterdayDate(): string {
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  return yesterday.toISOString().split("T")[0]!;
+}
+
+/** Filter articles to only include those published on a specific date (UTC day) */
+function filterArticlesByDate(articles: RawArticle[], targetDate: string): RawArticle[] {
+  return articles.filter((article) => {
+    if (!article.publishedAt) {
+      console.warn(`[Pipeline] Article "${article.title}" has no publishedAt date, skipping`);
+      return false;
+    }
+    const articleDate = article.publishedAt.toISOString().split("T")[0];
+    return articleDate === targetDate;
+  });
+}
+
+/** Get articles for a specific report date (uses previous day's articles) */
+function getArticlesForReportDate(articles: RawArticle[], reportDate: string): RawArticle[] {
+  // Report for date X should contain articles from date X-1 (previous day)
+  const yesterday = new Date(reportDate);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const previousDay = yesterday.toISOString().split("T")[0]!;
+  
+  return filterArticlesByDate(articles, previousDay);
 }
 
 /** Run the full daily pipeline for a given date */
@@ -77,10 +106,19 @@ export async function runDailyPipeline(reportDate?: string): Promise<{
   try {
     // ── Step 1: Crawl ──────────────────────────────────────────────
     console.log(`[Pipeline] Step 1: Crawling sources...`);
-    const rawArticles = await crawlAllSources();
+    const allRawArticles = await crawlAllSources();
+
+    if (allRawArticles.length === 0) {
+      throw new Error("No articles collected from any source");
+    }
+
+    // ── Step 1.5: Filter by date ───────────────────────────────────
+    console.log(`[Pipeline] Step 1.5: Filtering articles by date...`);
+    const rawArticles = getArticlesForReportDate(allRawArticles, date);
+    console.log(`[Pipeline] Filtered: ${allRawArticles.length} → ${rawArticles.length} articles for ${date}`);
 
     if (rawArticles.length === 0) {
-      throw new Error("No articles collected from any source");
+      throw new Error(`No articles found for ${date}. All ${allRawArticles.length} articles were from other dates.`);
     }
 
     // ── Step 2: AI Analysis ────────────────────────────────────────

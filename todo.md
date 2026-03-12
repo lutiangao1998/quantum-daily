@@ -115,3 +115,9 @@
 - [x] Change D-Wave ticker from QRDO to QBTS (correct NYSE symbol) ✅
 - [x] Update mock data with correct price ($18.76, -0.28, -1.47%) ✅
 - [x] All tests passing (21/21) ✅
+
+## Bug Fix: Daily Report Date Filtering (v1.7.7)
+- [x] Fix crawler to filter articles by publish date (previous day only) ✅
+- [x] Fix report generation to validate article dates ✅
+- [x] Remove old/stale articles from daily reports ✅
+- [x] Test report generation with date validation (all tests passing) ✅
