@@ -1,6 +1,7 @@
 import RSSParser from "rss-parser";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { getRuntimeConfig, type SourceKey } from "./runtimeConfig";
 
 export interface RawArticle {
   title: string;
@@ -218,25 +219,48 @@ function deduplicateArticles(articles: RawArticle[]): RawArticle[] {
 /** Run all crawlers and return deduplicated results */
 export async function crawlAllSources(): Promise<RawArticle[]> {
   console.log("[Crawler] Starting all source crawls...");
+  const sourceConfig = getRuntimeConfig().sources;
 
-  const [arxiv, googleNews, hackerNews, mitTechReview, ieee, physorg] =
-    await Promise.allSettled([
-      crawlArXiv(),
-      crawlGoogleNews(),
-      crawlHackerNews(),
-      crawlMITTechReview(),
-      crawlIEEE(),
-      crawlPhysOrg(),
-    ]);
-
-  const all: RawArticle[] = [
-    ...(arxiv.status === "fulfilled" ? arxiv.value : []),
-    ...(googleNews.status === "fulfilled" ? googleNews.value : []),
-    ...(hackerNews.status === "fulfilled" ? hackerNews.value : []),
-    ...(mitTechReview.status === "fulfilled" ? mitTechReview.value : []),
-    ...(ieee.status === "fulfilled" ? ieee.value : []),
-    ...(physorg.status === "fulfilled" ? physorg.value : []),
+  const allSources: Array<{
+    key: SourceKey;
+    label: string;
+    run: () => Promise<RawArticle[]>;
+  }> = [
+    { key: "arxiv", label: "arXiv", run: crawlArXiv },
+    { key: "googleNews", label: "Google News", run: crawlGoogleNews },
+    { key: "hackerNews", label: "Hacker News", run: crawlHackerNews },
+    { key: "mitTechReview", label: "MIT Technology Review", run: crawlMITTechReview },
+    { key: "ieee", label: "IEEE Spectrum", run: crawlIEEE },
+    { key: "physorg", label: "Phys.org", run: crawlPhysOrg },
   ];
+
+  const enabledSources = allSources.filter((source) => sourceConfig[source.key] !== false);
+  console.log(
+    `[Crawler] Enabled sources: ${
+      enabledSources.length > 0
+        ? enabledSources.map((s) => s.label).join(", ")
+        : "(none)"
+    }`
+  );
+
+  if (enabledSources.length === 0) {
+    console.warn("[Crawler] No sources enabled in runtime config");
+    return [];
+  }
+
+  const settled = await Promise.allSettled(enabledSources.map((s) => s.run()));
+  const all: RawArticle[] = [];
+
+  settled.forEach((result, idx) => {
+    const source = enabledSources[idx];
+    if (!source) return;
+
+    if (result.status === "fulfilled") {
+      all.push(...result.value);
+    } else {
+      console.error(`[Crawler] ${source.label} failed:`, result.reason);
+    }
+  });
 
   const deduped = deduplicateArticles(all);
   console.log(

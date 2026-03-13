@@ -11,4 +11,6 @@ export const ENV = {
   // External LLM providers (optional — falls back to Manus built-in)
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  claudeApiKey: process.env.CLAUDE_API_KEY ?? "",
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
 };

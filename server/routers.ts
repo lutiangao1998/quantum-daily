@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { adminProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
   getReportsList,
@@ -11,7 +11,7 @@ import {
   getLatestCompletedReport,
 } from "./db";
 import { runDailyPipeline, getTodayDate } from "./pipeline";
-import { getActiveProvider, PROVIDER_COSTS } from "./llmClient";
+import { getActiveProvider, getPreferredProviderMode, PROVIDER_COSTS } from "./llmClient";
 import {
   subscribeEmail,
   unsubscribeByToken,
@@ -19,6 +19,7 @@ import {
 } from "./emailService";
 import { stockRouter } from "./stockRoutes";
 import { searchRouter } from "./searchRoutes";
+import { getRuntimeConfig, updateRuntimeConfig } from "./runtimeConfig";
 
 export const appRouter = router({
   system: systemRouter,
@@ -35,22 +36,54 @@ export const appRouter = router({
   llm: router({
     status: publicProcedure.query(() => {
       const provider = getActiveProvider();
+      const selectedMode = getPreferredProviderMode();
       const costs = PROVIDER_COSTS[provider];
       const hasDeepseek = !!process.env.DEEPSEEK_API_KEY;
       const hasOpenai = !!process.env.OPENAI_API_KEY;
+      const hasClaude = !!process.env.CLAUDE_API_KEY;
+      const hasGemini = !!process.env.GEMINI_API_KEY;
       return {
+        selectedMode,
         activeProvider: provider,
         activeLabel: costs.label,
         inputCostPer1M: costs.input,
         outputCostPer1M: costs.output,
         hasDeepseek,
         hasOpenai,
+        hasClaude,
+        hasGemini,
         hasManus: true,
         // Estimated cost per daily report (55 articles × ~800 tokens avg)
         estimatedDailyCostUSD:
           provider === "manus" ? null : ((55 * 800 * costs.input) / 1_000_000 + (55 * 400 * costs.output) / 1_000_000),
       };
     }),
+
+    config: publicProcedure.query(() => {
+      return getRuntimeConfig();
+    }),
+
+    updateConfig: adminProcedure
+      .input(
+        z.object({
+          llmProvider: z
+            .enum(["auto", "deepseek", "openai", "claude", "gemini", "manus"])
+            .optional(),
+          sources: z
+            .object({
+              arxiv: z.boolean().optional(),
+              googleNews: z.boolean().optional(),
+              hackerNews: z.boolean().optional(),
+              mitTechReview: z.boolean().optional(),
+              ieee: z.boolean().optional(),
+              physorg: z.boolean().optional(),
+            })
+            .optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        return updateRuntimeConfig(input);
+      }),
   }),
 
   reports: router({

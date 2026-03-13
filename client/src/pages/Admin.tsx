@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Play, RefreshCw, CheckCircle2, XCircle, Clock, Loader2,
@@ -55,12 +57,45 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
+const LLM_PROVIDER_OPTIONS = [
+  { value: "auto", label: "Auto (DeepSeek → OpenAI → Claude → Gemini → Manus)" },
+  { value: "deepseek", label: "DeepSeek (manual)" },
+  { value: "openai", label: "OpenAI (manual)" },
+  { value: "claude", label: "Claude (manual)" },
+  { value: "gemini", label: "Gemini (manual)" },
+  { value: "manus", label: "Manus Built-in (manual)" },
+] as const;
+
+const SOURCE_OPTIONS = [
+  { key: "arxiv", label: "arXiv" },
+  { key: "googleNews", label: "Google News" },
+  { key: "hackerNews", label: "Hacker News" },
+  { key: "mitTechReview", label: "MIT Technology Review" },
+  { key: "ieee", label: "IEEE Spectrum" },
+  { key: "physorg", label: "Phys.org" },
+] as const;
+
+type SourceKey = (typeof SOURCE_OPTIONS)[number]["key"];
+type LlmProviderMode = (typeof LLM_PROVIDER_OPTIONS)[number]["value"];
+const DEFAULT_SOURCE_STATE: Record<SourceKey, boolean> = {
+  arxiv: true,
+  googleNews: true,
+  hackerNews: true,
+  mitTechReview: true,
+  ieee: true,
+  physorg: true,
+};
+
 export default function Admin() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const utils = trpc.useUtils();
   const [todayDate] = useState(() => new Date().toISOString().split("T")[0]!);
   const [pollingEnabled, setPollingEnabled] = useState(false);
   const [siteUrl] = useState(() => window.location.origin);
+  const [selectedProvider, setSelectedProvider] = useState<LlmProviderMode>("auto");
+  const [sourceConfig, setSourceConfig] =
+    useState<Record<SourceKey, boolean>>(DEFAULT_SOURCE_STATE);
 
   // Redirect non-admins
   useEffect(() => {
@@ -76,6 +111,37 @@ export default function Admin() {
 
   const recentReports = trpc.reports.list.useQuery({ limit: 5, offset: 0 });
   const llmStatus = trpc.llm.status.useQuery();
+  const runtimeConfig = trpc.llm.config.useQuery();
+
+  useEffect(() => {
+    if (!runtimeConfig.data) return;
+    setSelectedProvider(runtimeConfig.data.llmProvider as LlmProviderMode);
+    setSourceConfig({
+      arxiv: runtimeConfig.data.sources.arxiv,
+      googleNews: runtimeConfig.data.sources.googleNews,
+      hackerNews: runtimeConfig.data.sources.hackerNews,
+      mitTechReview: runtimeConfig.data.sources.mitTechReview,
+      ieee: runtimeConfig.data.sources.ieee,
+      physorg: runtimeConfig.data.sources.physorg,
+    });
+  }, [runtimeConfig.data]);
+
+  const saveConfigMutation = trpc.llm.updateConfig.useMutation({
+    onSuccess: async () => {
+      toast.success("Runtime config saved", {
+        description: "LLM provider and source switches updated.",
+      });
+      await Promise.all([
+        utils.llm.status.invalidate(),
+        utils.llm.config.invalidate(),
+      ]);
+    },
+    onError: (err) => {
+      toast.error("Failed to save runtime config", {
+        description: err.message,
+      });
+    },
+  });
 
   const triggerMutation = trpc.reports.triggerGeneration.useMutation({
     onSuccess: (data) => {
@@ -92,6 +158,17 @@ export default function Admin() {
 
   const handleTrigger = () => {
     triggerMutation.mutate({ date: todayDate });
+  };
+
+  const handleSaveRuntimeConfig = () => {
+    saveConfigMutation.mutate({
+      llmProvider: selectedProvider,
+      sources: sourceConfig,
+    });
+  };
+
+  const toggleSource = (key: SourceKey, enabled: boolean) => {
+    setSourceConfig((prev) => ({ ...prev, [key]: enabled }));
   };
 
   // Stop polling when done
@@ -262,6 +339,85 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-indigo-400" />
+            Runtime Config
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-white">LLM Provider Selector</CardTitle>
+                <CardDescription className="text-slate-400 text-xs">
+                  Choose auto fallback mode or force a specific provider.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Select
+                  value={selectedProvider}
+                  onValueChange={(value) => setSelectedProvider(value as LlmProviderMode)}
+                >
+                  <SelectTrigger className="w-full bg-slate-950 border-slate-700 text-slate-100">
+                    <SelectValue placeholder="Select provider mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LLM_PROVIDER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Current mode:{" "}
+                  <span className="text-slate-300 font-mono">
+                    {llmStatus.data?.selectedMode ?? selectedProvider}
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900 border-slate-700">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-white">Source Config</CardTitle>
+                <CardDescription className="text-slate-400 text-xs">
+                  Enable or disable data sources used by the crawler.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {SOURCE_OPTIONS.map((source) => (
+                  <div
+                    key={source.key}
+                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2"
+                  >
+                    <span className="text-sm text-slate-200">{source.label}</span>
+                    <Switch
+                      checked={sourceConfig[source.key]}
+                      onCheckedChange={(checked) => toggleSource(source.key, checked)}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              onClick={handleSaveRuntimeConfig}
+              disabled={saveConfigMutation.isPending || runtimeConfig.isLoading}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white gap-2"
+            >
+              {saveConfigMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save Runtime Config"
+              )}
+            </Button>
           </div>
         </section>
 
@@ -478,9 +634,14 @@ curl -X POST "${webhookUrl}" \\
                     <div className="flex items-center gap-2 mb-2">
                       <div className={`w-2 h-2 rounded-full ${
                         llmStatus.data?.activeProvider === 'deepseek' ? 'bg-blue-400' :
-                        llmStatus.data?.activeProvider === 'openai' ? 'bg-green-400' : 'bg-slate-400'
+                        llmStatus.data?.activeProvider === 'openai' ? 'bg-green-400' :
+                        llmStatus.data?.activeProvider === 'claude' ? 'bg-orange-400' :
+                        llmStatus.data?.activeProvider === 'gemini' ? 'bg-cyan-400' : 'bg-slate-400'
                       } animate-pulse`} />
                       <span className="text-white font-semibold text-sm">{llmStatus.data?.activeLabel}</span>
+                    </div>
+                    <div className="mb-2 text-xs text-slate-500">
+                      Mode: <span className="font-mono text-slate-300">{llmStatus.data?.selectedMode ?? "auto"}</span>
                     </div>
                     <div className="space-y-1 text-xs text-slate-400">
                       <div className="flex justify-between">
@@ -493,6 +654,18 @@ curl -X POST "${webhookUrl}" \\
                         <span>OpenAI</span>
                         <Badge className={`text-xs ${llmStatus.data?.hasOpenai ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
                           {llmStatus.data?.hasOpenai ? '✓ Configured' : 'Not set'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Claude</span>
+                        <Badge className={`text-xs ${llmStatus.data?.hasClaude ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
+                          {llmStatus.data?.hasClaude ? '✓ Configured' : 'Not set'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Gemini</span>
+                        <Badge className={`text-xs ${llmStatus.data?.hasGemini ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'bg-slate-700 text-slate-500 border-slate-600'}`}>
+                          {llmStatus.data?.hasGemini ? '✓ Configured' : 'Not set'}
                         </Badge>
                       </div>
                       <div className="flex justify-between">
@@ -543,7 +716,8 @@ curl -X POST "${webhookUrl}" \\
                 {[
                   { label: 'DeepSeek Chat', costPerDay: 0.0062, color: 'text-blue-400', active: llmStatus.data?.activeProvider === 'deepseek' },
                   { label: 'GPT-4o Mini', costPerDay: 0.0099, color: 'text-green-400', active: llmStatus.data?.activeProvider === 'openai' },
-                  { label: 'GPT-4o', costPerDay: 0.198, color: 'text-yellow-400', active: false },
+                  { label: 'Claude 3.5 Haiku', costPerDay: 0.0760, color: 'text-orange-400', active: llmStatus.data?.activeProvider === 'claude' },
+                  { label: 'Gemini 2.5 Flash', costPerDay: 0.0060, color: 'text-cyan-400', active: llmStatus.data?.activeProvider === 'gemini' },
                   { label: 'Manus Credits', costPerDay: null, color: 'text-slate-400', active: llmStatus.data?.activeProvider === 'manus' },
                 ].map(item => (
                   <div key={item.label} className={`flex items-center justify-between text-xs p-1.5 rounded ${
