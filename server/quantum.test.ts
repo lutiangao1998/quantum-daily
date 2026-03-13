@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getTodayDate } from "./pipeline";
 import { buildReportHTML } from "./pdfGenerator";
 import type { AnalyzedArticle, ReportSummary } from "./analyzer";
+import type { StockQuote } from "./stockService";
 
 // ── Pipeline Tests ──────────────────────────────────────────────────────────
 
@@ -57,6 +58,33 @@ describe("buildReportHTML", () => {
     },
   ];
 
+  const mockStocks: StockQuote[] = [
+    {
+      symbol: "IONQ",
+      name: "IonQ Inc.",
+      price: 35.12,
+      change: -0.75,
+      changePercent: -0.0209,
+      dayHigh: 36.92,
+      dayLow: 35.03,
+      volume: 2_500_000,
+      currency: "USD",
+      timestamp: Date.now(),
+    },
+    {
+      symbol: "QBTS",
+      name: "D-Wave Quantum Inc.",
+      price: 18.76,
+      change: -0.28,
+      changePercent: -0.0147,
+      dayHigh: 19.05,
+      dayLow: 18.66,
+      volume: 21_570_947,
+      currency: "USD",
+      timestamp: Date.now(),
+    },
+  ];
+
   it("generates valid HTML with required sections", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, mockArticles);
     expect(html).toContain("<!DOCTYPE html>");
@@ -106,6 +134,14 @@ describe("buildReportHTML", () => {
     const html = buildReportHTML("2026-03-09", mockSummary, []);
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("All Articles / 全部文章 (0)");
+  });
+
+  it("includes stock snapshot section when quotes are provided", () => {
+    const html = buildReportHTML("2026-03-09", mockSummary, mockArticles, mockStocks);
+    expect(html).toContain("Quantum Stock Snapshot");
+    expect(html).toContain("IONQ");
+    expect(html).toContain("QBTS");
+    expect(html).toContain("$35.12");
   });
 });
 

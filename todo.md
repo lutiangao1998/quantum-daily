@@ -36,12 +36,12 @@
 - [x] OpenClaw SKILL.md delivered to user
 
 ## OpenClaw Deep Integration (v1.1)
-- [ ] Webhook endpoint: POST /api/webhook/trigger (with secret token auth)
-- [ ] External LLM support: configure own OpenAI/Claude/Gemini API key via env
-- [ ] Admin panel page with pipeline status, manual trigger, source config
-- [ ] Rewrite OpenClaw SKILL.md: direct API query (no Manus LLM needed)
-- [ ] OpenClaw setup guide: step-by-step install + config instructions
-- [ ] LLM provider selector in analyzer (Manus built-in vs external key)
+- [x] Webhook endpoint: POST /api/webhook/trigger (with secret token auth)
+- [x] External LLM support: configure own OpenAI/Claude/Gemini API key via env
+- [x] Admin panel page with pipeline status, manual trigger, source config
+- [x] Rewrite OpenClaw SKILL.md: direct API query (no Manus LLM needed)
+- [x] OpenClaw setup guide: step-by-step install + config instructions
+- [x] LLM provider selector in analyzer (Manus built-in vs external key)
 
 ## OpenClaw Integration v1.1 (Manus-only)
 - [x] Webhook endpoint POST /api/webhook/trigger with WEBHOOK_SECRET auth
@@ -88,7 +88,7 @@
 - [x] Stock: fetch real-time prices for IonQ (IONQ), IBM, Rigetti (RGTI), Google (GOOGL), Honeywell (HON) — backend ready
 - [x] Stock: tRPC procedure stocks.quotes with 15min cache — backend ready
 - [x] Stock: StockTicker component on home page (live quotes with daily high/low/volume)
-- [ ] Stock: include stock snapshot in daily PDF report
+- [x] Stock: include stock snapshot in daily PDF report
 - [x] Search: full-text search API across article titles + summaries — backend ready
 - [x] Search: /search page with keyword input, category filter, date range ✅
 - [x] Search: highlight matched keywords in results (importance score bar)

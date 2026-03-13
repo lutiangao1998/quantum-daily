@@ -1,5 +1,6 @@
 import { storagePut } from "./storage";
 import type { AnalyzedArticle, ReportSummary } from "./analyzer";
+import type { StockQuote } from "./stockService";
 
 const CATEGORY_LABELS: Record<string, { en: string; zh: string; color: string }> = {
   quantum_computing: { en: "Quantum Computing", zh: "量子计算", color: "#6366f1" },
@@ -114,10 +115,41 @@ function buildCategoryStats(articles: AnalyzedArticle[]): string {
     .join("\n");
 }
 
+function buildStockSnapshot(stocks: StockQuote[]): string {
+  if (stocks.length === 0) {
+    return `<div class="stock-empty">Stock snapshot unavailable for this report run.</div>`;
+  }
+
+  return stocks
+    .map((stock) => {
+      const isUp = stock.change >= 0;
+      const changeColor = isUp ? "#22c55e" : "#ef4444";
+      const sign = isUp ? "+" : "";
+      return `
+      <div class="stock-card">
+        <div class="stock-head">
+          <div class="stock-symbol">${escapeHtml(stock.symbol)}</div>
+          <div class="stock-name">${escapeHtml(stock.name)}</div>
+        </div>
+        <div class="stock-price">$${stock.price.toFixed(2)}</div>
+        <div class="stock-change" style="color:${changeColor}">
+          ${sign}${stock.change.toFixed(2)} (${(stock.changePercent * 100).toFixed(2)}%)
+        </div>
+        <div class="stock-meta">
+          <span>H: $${stock.dayHigh.toFixed(2)}</span>
+          <span>L: $${stock.dayLow.toFixed(2)}</span>
+          <span>Vol: ${stock.volume.toLocaleString("en-US")}</span>
+        </div>
+      </div>`;
+    })
+    .join("\n");
+}
+
 export function buildReportHTML(
   reportDate: string,
   summary: ReportSummary,
-  articles: AnalyzedArticle[]
+  articles: AnalyzedArticle[],
+  stocks: StockQuote[] = []
 ): string {
   const topArticles = [...articles]
     .sort((a, b) => b.importanceScore - a.importanceScore)
@@ -286,6 +318,57 @@ export function buildReportHTML(
     overflow: hidden;
   }
   .stat-bar { height: 100%; border-radius: 4px; }
+
+  /* ── Stock Snapshot ── */
+  .stocks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .stock-card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .stock-head {
+    margin-bottom: 6px;
+  }
+  .stock-symbol {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .stock-name {
+    font-size: 10px;
+    color: #64748b;
+  }
+  .stock-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 3px;
+  }
+  .stock-change {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .stock-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    color: #64748b;
+  }
+  .stock-empty {
+    background: #0f172a;
+    border: 1px dashed #334155;
+    border-radius: 10px;
+    padding: 14px;
+    color: #64748b;
+    font-size: 11px;
+  }
 
   /* ── Top Stories ── */
   .top-story {
@@ -479,6 +562,14 @@ export function buildReportHTML(
     <div class="section-title">Category Distribution / 分类分布</div>
     <div class="stats-grid">
       ${buildCategoryStats(articles)}
+    </div>
+  </div>
+
+  <!-- Quantum Stock Snapshot -->
+  <div class="section">
+    <div class="section-title">Quantum Stock Snapshot / 量子概念股快照</div>
+    <div class="stocks-grid">
+      ${buildStockSnapshot(stocks)}
     </div>
   </div>
 

@@ -6,6 +6,7 @@ import { analyzeArticles, generateReportSummary } from "./analyzer";
 import { buildReportHTML, generateAndUploadPDF } from "./pdfGenerator";
 import { notifyOwner } from "./_core/notification";
 import { sendDailyReportToSubscribers } from "./emailService";
+import { getAllQuantumStocks } from "./stockService";
 
 /** Get today's date in YYYY-MM-DD format (UTC) */
 export function getTodayDate(): string {
@@ -155,7 +156,11 @@ export async function runDailyPipeline(reportDate?: string): Promise<{
       .set({ status: "generating" })
       .where(eq(reports.id, reportId));
 
-    const html = buildReportHTML(date, reportSummary, analyzedArticles);
+    const stockSnapshot = await getAllQuantumStocks().catch((error) => {
+      console.warn("[Pipeline] Stock snapshot fetch failed:", error);
+      return [];
+    });
+    const html = buildReportHTML(date, reportSummary, analyzedArticles, stockSnapshot);
     const pdfUrl = await generateAndUploadPDF(date, html);
 
     // ── Step 5: Update report record ───────────────────────────────
